@@ -10,7 +10,7 @@
   It can also be found in the 'ProcessName' column of the Get-process PowerShell command's output.
 
 .INPUTS
-  None
+  processName [optional] 
 
 .OUTPUTS
   Console output and Exit Code
@@ -58,6 +58,10 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
+# Gather paramters
+param(
+    [Parameter(Mandatory=$false)][string]$processName
+)
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------#
 # Initialize process.running.timeoutException exception object
@@ -66,7 +70,10 @@ $timeoutException = new-object system.timeoutException
 
 #----------------------------------------------------------[Declarations]----------------------------------------------------------#
 # Declare Process Name
-$processName = ''
+if($processName -eq $null -or $processName -eq "")
+{
+    $processName = 'slack'
+}
 
 # Declare timeout in seconds
 $timeout = '60'      ## seconds
@@ -97,14 +104,20 @@ Try
         Write-Host "Still waiting for process '$processName' to be running after [$totalSecs] seconds..."
     }
     
+    Write-Host "Process info: $process"
+
     # Stop the timer
     $timer.Stop()
 
     # Check if timer elapsed time has exceeded the defined timeout
-    if ($timer.Elapsed.TotalSeconds -gt $timeout) {
+    if ($timer.Elapsed.TotalSeconds -gt $timeout)
+    {
         # Throw exception
         throw $timeoutException
-    } else {
+    }
+    else
+    {
+        Write-Verbose -Message "$process"
         $result = $TRUE
     }
     
