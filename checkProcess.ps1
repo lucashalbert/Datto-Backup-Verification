@@ -11,20 +11,23 @@
 
 .INPUTS
   processName [optional] 
+  timeout [optional] 
+  retryInterval [optional] 
 
 .OUTPUTS
   Console output and Exit Code
 
 .NOTES
   Author:         Lucas Halbert <contactme@lhalbert.xyz>
-  Version:        2020.09.28
+  Version:        2020.10.08
   Date Written:   09/28/2020
-  Date Modified:  09/28/2020
+  Date Modified:  10/08/2020
 
-  Revisions:      2020.09.28 - Inital draft
+  Revisions:      2020.10.08 - Add parameters to make script more extensible
+                  2020.09.28 - Inital draft
 
 .EXAMPLE
-  .\checkProcess.ps1
+  .\checkProcess.ps1 [[-processName] <string>] [[-timeout] <string>] [[-retryInterval] <string>] [<CommonParameters>]
 
 .LICENSE
   License:        BSD 3-Clause License
@@ -60,11 +63,14 @@
 
 # Gather paramters
 param(
-    [Parameter(Mandatory=$false)][string]$processName
+    [Parameter(Mandatory=$false)][string]$processName,
+    [Parameter(Mandatory=$false)][string]$timeout,
+    [Parameter(Mandatory=$false)][string]$retryInterval
 )
 
+
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------#
-# Initialize process.running.timeoutException exception object
+# Initialize system.timeoutException exception object
 $timeoutException = new-object system.timeoutException
 
 
@@ -76,10 +82,16 @@ if($processName -eq $null -or $processName -eq "")
 }
 
 # Declare timeout in seconds
-$timeout = '60'      ## seconds
+if($timeout -eq $null -or $timeout -eq "")
+{
+    $timeout = '60'      ## seconds
+}
 
 # Declare retry interval in seconds
-$retryInterval = '1' ## seconds
+if($retryInterval -eq $null -or $retryInterval -eq "")
+{
+    $retryInterval = '5' ## seconds
+}
 
 # Declare condition script codeblock
 $condition1 = { (Get-Process $processName -ErrorAction SilentlyContinue).count -lt 1 }
@@ -103,8 +115,6 @@ Try
         
         Write-Host "Still waiting for process '$processName' to be running after [$totalSecs] seconds..."
     }
-    
-    Write-Host "Process info: $process"
 
     # Stop the timer
     $timer.Stop()
@@ -117,29 +127,30 @@ Try
     }
     else
     {
-        Write-Verbose -Message "$process"
         $result = $TRUE
     }
     
 }
 Catch [system.timeoutException]
 {
-    Write-Host "FAIL: Timed out while waiting for process '$processName' to be in a 'running' state."
+    Write-Host "ERROR: Timed out while waiting for process '$processName' to be in a running state."
+    Write-Verbose -Message $_.Exception.Message
 }
 Catch
 { 
-    Write-Host "FAIL: Caught an unexpected exception while waiting for process '$processName' to be in a 'running' state: $_.Exception.Message"
+    Write-Host "ERROR: Caught an unexpected exception while waiting for process '$processName' to be in a running state: $_.Exception.Message"
 }
 
 Finally
 {  
     If ($result)
     {        
-        Write-Host "SUCCESS: '$processName' is 'running'"
+        Write-Host "OK: '$processName' is running"
         Exit 0
     }
     Else
     {   
+        Write-Host "ERROR: '$ProcessName' is NOT running"
         Exit 1
     }
 }
