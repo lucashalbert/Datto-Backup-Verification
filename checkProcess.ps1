@@ -64,7 +64,7 @@ param(
 )
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------#
-# Initialize process.running.timeoutException exception object
+# Initialize system.timeoutException exception object
 $timeoutException = new-object system.timeoutException
 
 
